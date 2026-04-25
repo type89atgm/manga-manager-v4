@@ -1,8 +1,8 @@
 <template>
   <div class="detail" v-if="detail">
     <div class="detail-top">
-      <button @click="goBack" class="btn">Back</button>
-      <button @click="goRead" class="btn accent">Read</button>
+      <button @click="goBack" class="btn">返回</button>
+      <button @click="goRead" class="btn accent">开始阅读</button>
     </div>
     <div class="detail-body">
       <div class="detail-left">
@@ -11,33 +11,33 @@
       <div class="detail-right">
         <h2>{{ detail.manga.eh_title || detail.manga.title }}</h2>
         <div v-if="detail.manga.eh_title_jpn" class="sub-title">{{ detail.manga.eh_title_jpn }}</div>
-        <div class="meta-row"><label>Category:</label><span>{{ detail.manga.eh_category || '-' }}</span></div>
-        <div class="meta-row"><label>Pages:</label><span>{{ detail.manga.page_count }}</span></div>
-        <div class="meta-row"><label>Uploader:</label><span>{{ detail.manga.eh_uploader || '-' }}</span></div>
+        <div class="meta-row"><label>分类:</label><span>{{ detail.manga.eh_category || '-' }}</span></div>
+        <div class="meta-row"><label>页数:</label><span>{{ detail.manga.page_count }}</span></div>
+        <div class="meta-row"><label>上传者:</label><span>{{ detail.manga.eh_uploader || '-' }}</span></div>
         <div class="meta-row">
-          <label>Score:</label>
+          <label>评分:</label>
           <input type="number" v-model.number="score" min="0" max="10" step="0.5" class="score-input" />
-          <button @click="saveScore" class="btn-sm">Save</button>
+          <button @click="saveScore" class="btn-sm">保存</button>
         </div>
-        <div class="meta-row"><label>Tag Status:</label><span :class="'ts ' + detail.manga.tag_status">{{ detail.manga.tag_status }}</span></div>
+        <div class="meta-row"><label>标签状态:</label><span :class="'ts ' + detail.manga.tag_status">{{ tsLabel(detail.manga.tag_status) }}</span></div>
         <div class="tags-section">
-          <h3>Tags</h3>
+          <h3>标签列表</h3>
           <div class="tag-groups">
             <div v-for="(tags, ns) in groupedTags" :key="ns" class="tag-group">
               <span class="tag-ns">{{ ns }}:</span>
               <span v-for="t in tags" :key="t" class="tag-item">{{ t }}</span>
             </div>
           </div>
-          <div v-if="Object.keys(groupedTags).length===0" class="no-tags">No tags yet. Paste a gallery URL below.</div>
+          <div v-if="Object.keys(groupedTags).length===0" class="no-tags">暂无标签，请在下方粘贴画廊链接获取</div>
         </div>
         <div class="url-section">
-          <input v-model="ehUrl" placeholder="Paste E-Hentai / ExHentai gallery URL" class="url-input" />
-          <button @click="fetchByUrl" class="btn" :disabled="fetching">{{ fetching ? 'Fetching...' : 'Fetch Tags' }}</button>
+          <input v-model="ehUrl" placeholder="粘贴 E-Hentai / ExHentai 画廊链接" class="url-input" />
+          <button @click="fetchByUrl" class="btn" :disabled="fetching">{{ fetching ? '获取中...' : '获取标签' }}</button>
         </div>
         <div class="url-section" style="margin-top:8px">
-          <input v-model="gidInput" placeholder="Or enter GID" class="url-input" style="width:120px" />
-          <input v-model="tokenInput" placeholder="Token" class="url-input" style="width:200px" />
-          <button @click="fetchByGid" class="btn" :disabled="fetching">Fetch by GID</button>
+          <input v-model="gidInput" placeholder="或输入 GID" class="url-input" style="width:120px" />
+          <input v-model="tokenInput" placeholder="令牌" class="url-input" style="width:200px" />
+          <button @click="fetchByGid" class="btn" :disabled="fetching">通过 GID 获取</button>
         </div>
       </div>
     </div>
@@ -61,6 +61,13 @@ const ehUrl = ref("");
 const gidInput = ref("");
 const tokenInput = ref("");
 const fetching = ref(false);
+
+function tsLabel(s: string): string {
+  if (s === "tagged") return "已标记";
+  if (s === "non-tag") return "未标记";
+  if (s === "tag-failed") return "标记失败";
+  return s;
+}
 
 function toSrc(p: string | null): string {
   if (!p) return "";
@@ -93,9 +100,9 @@ async function fetchByUrl() {
   try {
     await invoke("fetch_tags_by_url", { mangaId: id, url: ehUrl.value.trim() });
     detail.value = await invoke<MangaDetail>("get_manga_detail", { mangaId: id });
-    alert("Tags fetched successfully!");
+    alert("标签获取成功！");
   } catch (e) {
-    alert("Error: " + e);
+    alert("错误: " + e);
   } finally {
     fetching.value = false;
   }
@@ -108,9 +115,9 @@ async function fetchByGid() {
     const url = "https://exhentai.org/g/" + gidInput.value.trim() + "/" + tokenInput.value.trim() + "/";
     await invoke("fetch_tags_by_url", { mangaId: id, url: url });
     detail.value = await invoke<MangaDetail>("get_manga_detail", { mangaId: id });
-    alert("Tags fetched successfully!");
+    alert("标签获取成功！");
   } catch (e) {
-    alert("Error: " + e);
+    alert("错误: " + e);
   } finally {
     fetching.value = false;
   }

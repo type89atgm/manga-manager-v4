@@ -1,8 +1,6 @@
 use super::ImageEntry;
 use std::path::Path;
 
-/// List images in a RAR archive.
-/// open_for_listing() returns Result<OpenArchive>, which IS an iterator.
 pub fn list_images(path: &Path) -> Result<Vec<ImageEntry>, String> {
     let archive = unrar::Archive::new(path);
     let list = archive.open_for_listing().map_err(|e| e.to_string())?;
@@ -19,14 +17,10 @@ pub fn list_images(path: &Path) -> Result<Vec<ImageEntry>, String> {
     Ok(entries)
 }
 
-/// Read a single image from a RAR archive into memory.
-/// Uses open_for_processing + read_header loop; only the target file is extracted.
+#[allow(unused_assignments)]
 pub fn read_image(path: &Path, entry_name: &str) -> Result<Vec<u8>, String> {
     let archive = unrar::Archive::new(path);
-    let mut proc = archive
-        .open_for_processing()
-        .map_err(|e| e.to_string())?;
-
+    let mut proc = archive.open_for_processing().map_err(|e| e.to_string())?;
     let temp_dir = std::env::temp_dir().join("manga-manager-rar");
     std::fs::create_dir_all(&temp_dir).map_err(|e| e.to_string())?;
 
@@ -38,9 +32,7 @@ pub fn read_image(path: &Path, entry_name: &str) -> Result<Vec<u8>, String> {
                 if info.is_directory() {
                     proc = header.skip().map_err(|e| e.to_string())?;
                 } else if name == entry_name {
-                    proc = header
-                        .extract_with_base(&temp_dir)
-                        .map_err(|e| e.to_string())?;
+                    proc = header.extract_with_base(&temp_dir).map_err(|e| e.to_string())?;
                     let file_path = temp_dir.join(&name);
                     let data = std::fs::read(&file_path).map_err(|e| e.to_string())?;
                     let _ = std::fs::remove_file(&file_path);

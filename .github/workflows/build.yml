@@ -8,36 +8,13 @@ on:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: windows-latest
-            args: ""
-            target: ""
-          - platform: macos-latest
-            args: "--target universal-apple-darwin"
-            target: "aarch64-apple-darwin,x86_64-apple-darwin"
-          - platform: ubuntu-22.04
-            args: ""
-            target: ""
-
-    runs-on: ${{ matrix.platform }}
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-
-      - name: Install dependencies (Ubuntu)
-        if: ${{ matrix.platform == 'ubuntu-22.04' }}
-
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -56,9 +33,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "Manga Manager ${{ github.ref_name }}"
-          releaseBody: "See the assets to download this version."
+          releaseName: "Manga Manager-v4 ${{ github.ref_name }}"
+          releaseBody: "Windows 安装包。"
           releaseDraft: true
           prerelease: false
           tauriScript: pnpm tauri
-          args: ${{ matrix.args }}

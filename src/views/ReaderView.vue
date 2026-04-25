@@ -1,7 +1,7 @@
 <template>
   <div class="reader" @wheel.prevent="onWheel" tabindex="0" ref="readerEl">
     <div class="toolbar">
-      <button @click="goBack" class="tb">Back</button>
+      <button @click="goBack" class="tb">返回</button>
       <span class="pi">{{ curPage + 1 }} / {{ pages }}</span>
       <div class="modes">
         <button v-for="m in modeList" :key="m.v" @click="mode=m.v"
@@ -12,7 +12,7 @@
       <img v-if="imgSrc" :src="imgSrc" :style="imgSty" class="pg"
         @load="onLoad" @mousedown.prevent="mdStart" @mousemove="mdMove"
         @mouseup="mdEnd" @mouseleave="mdEnd" />
-      <div v-else class="ld">Loading...</div>
+      <div v-else class="ld">加载中...</div>
     </div>
   </div>
 </template>
@@ -37,13 +37,12 @@ const natH = ref(0);
 type Mode = "fit-h" | "fit-w" | "auto" | "orig";
 const mode = ref<Mode>("auto");
 const modeList = [
-  { v: "fit-h" as Mode, l: "H", t: "Fit Height" },
-  { v: "fit-w" as Mode, l: "W", t: "Fit Width" },
-  { v: "auto"  as Mode, l: "A", t: "Auto Fit" },
-  { v: "orig"  as Mode, l: "1", t: "Original Size (drag to pan)" },
+  { v: "fit-h" as Mode, l: "H", t: "适配高度" },
+  { v: "fit-w" as Mode, l: "W", t: "适配宽度" },
+  { v: "auto"  as Mode, l: "A", t: "自动适配" },
+  { v: "orig"  as Mode, l: "1", t: "原始大小（可拖拽）" },
 ];
 
-// Drag state for original-size mode
 const dragging = ref(false);
 const dragX = ref(0);
 const dragY = ref(0);
@@ -89,7 +88,6 @@ const imgSty = computed(() => {
     st.width = sw + "px";
     st.height = "auto";
   } else {
-    // auto: choose best fit
     const stageRatio = sw / sh;
     if (imgRatio > stageRatio) {
       st.width = sw + "px";
@@ -108,7 +106,6 @@ function onLoad(e: Event) {
   natH.value = img.naturalHeight;
 }
 
-// Wheel: accumulate delta, flip page at threshold, with 200ms cooldown
 let wheelAcc = 0;
 let lastWheelTime = 0;
 function onWheel(e: WheelEvent) {

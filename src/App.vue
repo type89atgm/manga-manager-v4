@@ -2,10 +2,10 @@
   <div id="app-root">
     <nav class="topbar">
       <div class="nav-left">
-        <router-link to="/" class="nav-link">Library</router-link>
+        <router-link to="/" class="nav-link">漫画库</router-link>
       </div>
       <div class="nav-right">
-        <button @click="openSettings" class="btn-icon" title="Settings">&#9881;</button>
+        <button @click="openSettings" class="btn-icon" title="设置">&#9881;</button>
       </div>
     </nav>
     <main class="main-content">

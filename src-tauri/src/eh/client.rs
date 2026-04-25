@@ -13,6 +13,7 @@ pub struct EhClient {
 }
 
 impl EhClient {
+    #[allow(dead_code)]
     pub fn new(config: &AppConfig) -> Self {
         Self::new_from(config.use_exhentai)
     }
@@ -30,40 +31,27 @@ impl EhClient {
         if self.use_exhentai { EX_API } else { EH_API }
     }
 
-    pub async fn fetch_gdata(
-        &self,
-        gidlist: &[(i64, String)],
-        cookies: &str,
-    ) -> Result<Vec<EhGalleryMetadata>, String> {
+    pub async fn fetch_gdata(&self, gidlist: &[(i64, String)], cookies: &str) -> Result<Vec<EhGalleryMetadata>, String> {
         let gid_json: Vec<Vec<serde_json::Value>> = gidlist.iter()
             .map(|(gid, token)| vec![json!(*gid), json!(token)])
             .collect();
         let body = json!({ "method": "gdata", "gidlist": gid_json, "namespace": 1 });
-
         let resp = self.http.post(self.api_url())
             .header("Cookie", cookies)
             .json(&body)
             .send().await.map_err(|e| e.to_string())?;
-
         if resp.status() == reqwest::StatusCode::FORBIDDEN {
             return Err("IP_BANNED".into());
         }
-
         let data: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
         let gmetadata = data.get("gmetadata").ok_or("no gmetadata in response")?;
         serde_json::from_value(gmetadata.clone()).map_err(|e| e.to_string())
     }
 
-    pub async fn search(
-        &self,
-        keyword: &str,
-        page: i32,
-        cookies: &str,
-    ) -> Result<serde_json::Value, String> {
+    pub async fn search(&self, keyword: &str, page: i32, cookies: &str) -> Result<serde_json::Value, String> {
         let base = if self.use_exhentai { "https://exhentai.org" } else { "https://e-hentai.org" };
         let url = format!("{}/?f_search={}&page={}", base, keyword, page);
-        let resp = self.http.get(&url).header("Cookie", cookies).send().await
-            .map_err(|e| e.to_string())?;
+        let resp = self.http.get(&url).header("Cookie", cookies).send().await.map_err(|e| e.to_string())?;
         if resp.status() == reqwest::StatusCode::FORBIDDEN {
             return Err("IP_BANNED".into());
         }

@@ -1,7 +1,7 @@
 {
   "productName": "Manga Manager-v4",
-  "version": "0.1.1",
-  "identifier": "com.manga-manager-v4.app",
+  "version": "0.1.2",
+  "identifier": "com.manga-manager.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
@@ -11,11 +11,12 @@
   "app": {
     "windows": [
       {
-        "title": "Manga Manager",
+        "title": "Manga Manager-v4",
         "width": 1280,
         "height": 800,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "dragDropEnabled": true
       }
     ],
     "security": {
@@ -33,5 +34,5 @@
       "icons/icon.ico"
     ]
   },
-   "plugins": {}
+  "plugins": {}
 }
