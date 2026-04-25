@@ -1,0 +1,8 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #app { width: 100%; height: 100%; overflow: hidden; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+:root {
+  --bg: #1a1a2e; --bg2: #16213e; --bg3: #0f3460;
+  --text: #e0e0e0; --text2: #a0a0a0;
+  --accent: #e94560; --accent2: #533483;
+  --border: #2a2a4a;
+}
