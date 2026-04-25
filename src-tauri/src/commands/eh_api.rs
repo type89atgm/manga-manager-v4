@@ -64,14 +64,16 @@ pub async fn batch_fetch_tags(
             "SELECT id, eh_gid, eh_token FROM manga \
              WHERE tag_status IN ('non-tag','tag-failed') AND eh_gid IS NOT NULL"
         ).map_err(|e| e.to_string())?;
-        stmt.query_map([], |r| {
+        let x = stmt.query_map([], |r| {
             Ok((
                 r.get::<_, i64>(0)?,
                 r.get::<_, String>(1)?.parse().unwrap_or(0),
                 r.get::<_, String>(2)?,
             ))
-        }).map_err(|e| e.to_string())?.filter_map(|r| r.ok()).collect()
+        }).map_err(|e| e.to_string())?.filter_map(|r| r.ok()).collect();
+        x
     };
+
 
     if rows.is_empty() {
         return Ok(FetchResult { success: vec![], failed: vec![], ip_banned: false });
