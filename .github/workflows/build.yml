@@ -33,7 +33,7 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Install dependencies (Ubuntu)
-               if: ${{ matrix.platform == 'ubuntu-22.04' }}
+        if: ${{ matrix.platform == 'ubuntu-22.04' }}
 
         run: |
           sudo apt-get update
