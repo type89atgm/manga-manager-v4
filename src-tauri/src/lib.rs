@@ -41,6 +41,7 @@ pub fn run() {
             metadata::update_manga_tags,
             eh_api::fetch_tags_by_url,
             eh_api::batch_fetch_tags,
+            eh_api::match_by_sha1,
             eh_api::retry_failed_tags,
             eh_api::set_eh_cookies,
             eh_api::search_eh_gallery,

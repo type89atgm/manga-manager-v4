@@ -4,7 +4,8 @@
       <button @click="selectFolder" class="btn">添加文件夹</button>
       <input v-model="keyword" @keyup.enter="doSearch" placeholder="搜索标题或标签..." class="search-input" />
       <button @click="doSearch" class="btn">搜索</button>
-      <button @click="batchFetch" class="btn" :disabled="fetching">{{ fetching ? '获取中...' : '批量获取标签' }}</button>
+      <button @click="batchMatchAndFetch" class="btn" :disabled="fetching">{{ fetching ? '匹配/获取中...' : '批量匹配+获取标签' }}</button>
+      <button @click="batchFetchOnly" class="btn" :disabled="fetching">仅获取已有GID</button>
     </div>
     <div v-if="store.loading" class="status-msg">加载中...</div>
     <div v-else class="grid">
@@ -26,10 +27,9 @@
       没有找到漫画。拖拽文件夹到此处或点击"添加文件夹"开始扫描。
     </div>
 
-    <!-- 拖拽覆盖层 -->
     <div v-if="isDragging" class="drop-overlay">
       <div class="drop-box">
-        <div class="drop-icon">&#128194;</div>
+        <div class="drop-icon">??</div>
         <div>拖放文件夹到此处自动扫描</div>
       </div>
     </div>
@@ -42,7 +42,7 @@ import { useRouter } from "vue-router";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
-import { useLibraryStore, type MangaItem } from "../stores/main";
+import { useLibraryStore } from "../stores/main";
 
 const store = useLibraryStore();
 const router = useRouter();
@@ -65,8 +65,6 @@ function toSrc(p: string | null): string {
 
 onMounted(async () => {
   store.loadManga();
-
-  // Tauri 2 drag-drop listener
   try {
     unlisten = await getCurrentWebview().onDragDropEvent(async (event) => {
       if (event.payload.type === "enter") {
@@ -78,7 +76,7 @@ onMounted(async () => {
         const paths = event.payload.paths;
         if (paths.length > 0) {
           const result = await store.scanLibrary(paths);
-          alert("扫描完成：新增 " + result.added + " 部 / 共扫描 " + result.total + " 个文件");
+          alert("扫描完成：新增 " + result.added + " 部 / 共 " + result.total + " 个文件");
           store.loadManga();
         }
       }
@@ -88,16 +86,14 @@ onMounted(async () => {
   }
 });
 
-onUnmounted(() => {
-  if (unlisten) unlisten();
-});
+onUnmounted(() => { if (unlisten) unlisten(); });
 
 async function selectFolder() {
   const selected = await open({ directory: true, multiple: true });
   if (selected && Array.isArray(selected)) {
     const paths = selected.map(String);
     const result = await store.scanLibrary(paths);
-    alert("扫描完成：新增 " + result.added + " 部 / 共扫描 " + result.total + " 个文件");
+    alert("扫描完成：新增 " + result.added + " 部 / 共 " + result.total + " 个文件");
     store.loadManga();
   }
 }
@@ -110,12 +106,35 @@ async function doSearch() {
   }
 }
 
-async function batchFetch() {
+async function batchMatchAndFetch() {
   fetching.value = true;
   try {
-    const r = await invoke<{ success: number[]; failed: number[]; ip_banned: boolean }>("batch_fetch_tags");
-    let msg = "成功: " + r.success.length + ", 失败: " + r.failed.length;
-    if (r.ip_banned) msg += "\n\nIP 已被封禁！请等待 5-10 分钟后重试。";
+    // Step 1: Match by SHA1
+    const allIds = store.mangaList.filter(m => m.tag_status !== "tagged").map(m => m.id);
+    let matchedMsg = "";
+    if (allIds.length > 0) {
+      const matched = await invoke<number[]>("match_by_sha1", { mangaIds: allIds });
+      matchedMsg = "\nSHA1匹配到 " + matched.length + " 个画廊";
+    }
+    // Step 2: Fetch tags
+    const r = await invoke<{ success: number[]; failed: number[]; matched: number[]; ip_banned: boolean }>("batch_fetch_tags");
+    let msg = "获取成功: " + r.success.length + ", 失败: " + r.failed.length + matchedMsg;
+    if (r.ip_banned) msg += "\n\n? IP 已被封禁！请等待 5-10 分钟后重试。";
+    alert(msg);
+    store.loadManga();
+  } catch (e) {
+    alert("错误: " + e);
+  } finally {
+    fetching.value = false;
+  }
+}
+
+async function batchFetchOnly() {
+  fetching.value = true;
+  try {
+    const r = await invoke<{ success: number[]; failed: number[]; matched: number[]; ip_banned: boolean }>("batch_fetch_tags");
+    let msg = "获取成功: " + r.success.length + ", 失败: " + r.failed.length;
+    if (r.ip_banned) msg += "\n\n? IP 已被封禁！";
     alert(msg);
     store.loadManga();
   } catch (e) {
@@ -132,11 +151,11 @@ function goDetail(id: number) { router.push("/detail/" + id); }
 .library { height: 100%; display: flex; flex-direction: column; position: relative; }
 .toolbar {
   display: flex; gap: 8px; padding: 8px 12px;
-  background: var(--bg2); border-bottom: 1px solid var(--border); align-items: center; flex-shrink: 0;
+  background: var(--bg2); border-bottom: 1px solid var(--border); align-items: center; flex-shrink: 0; flex-wrap: wrap;
 }
 .btn {
   background: var(--bg3); color: var(--text); border: 1px solid var(--border);
-  padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 13px;
+  padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; white-space: nowrap;
 }
 .btn:hover { background: var(--accent2); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -168,7 +187,6 @@ function goDetail(id: number) { router.push("/detail/" + id); }
 .ts.non-tag { background: #555; color: #aaa; }
 .ts.tag-failed { background: #5a2727; color: #f88; }
 .status-msg { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text2); font-size: 16px; padding: 40px; text-align: center; }
-
 .drop-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0,0,0,0.7); z-index: 9999;

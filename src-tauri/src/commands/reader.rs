@@ -27,7 +27,6 @@ pub fn list_pages(
     Ok(images.into_iter().map(|e| PageInfo { index: e.index, name: e.name }).collect())
 }
 
-/// Returns the cached file path (not base64). Frontend uses convertFileSrc().
 #[tauri::command]
 pub fn get_page(
     manga_id: i64,
@@ -48,7 +47,6 @@ pub fn get_page(
     }
     let entry_name = &images[page].name;
     let img_data = archive::read_image(path, entry_name)?;
-    // Preserve original file extension
     let ext = std::path::Path::new(entry_name)
         .extension()
         .and_then(|e| e.to_str())

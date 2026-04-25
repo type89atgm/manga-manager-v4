@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS manga (
     title TEXT NOT NULL,
     file_path TEXT NOT NULL UNIQUE,
     file_hash TEXT NOT NULL,
+    sha1_hash TEXT,
     folder TEXT NOT NULL,
     page_count INTEGER NOT NULL DEFAULT 0,
     score REAL NOT NULL DEFAULT 0,

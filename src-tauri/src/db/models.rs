@@ -6,6 +6,7 @@ pub struct Manga {
     pub title: String,
     pub file_path: String,
     pub file_hash: String,
+    pub sha1_hash: Option<String>,
     pub folder: String,
     pub page_count: i64,
     pub score: f64,
