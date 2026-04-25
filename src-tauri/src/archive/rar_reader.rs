@@ -2,8 +2,7 @@ use super::ImageEntry;
 use std::path::Path;
 
 /// List images in a RAR archive.
-/// - open_for_listing() returns Result<OpenArchive, UnrarError> → use `?`
-/// - The OpenArchive is an iterator yielding Result<FileHeader, UnrarError>
+/// open_for_listing() returns Result<OpenArchive>, which IS an iterator.
 pub fn list_images(path: &Path) -> Result<Vec<ImageEntry>, String> {
     let archive = unrar::Archive::new(path);
     let list = archive.open_for_listing().map_err(|e| e.to_string())?;
@@ -20,27 +19,38 @@ pub fn list_images(path: &Path) -> Result<Vec<ImageEntry>, String> {
     Ok(entries)
 }
 
-/// Read a single image from RAR by entry name.
-/// Extracts entire archive to temp dir (cached by file hash), then reads file.
+/// Read a single image from a RAR archive into memory.
+/// Uses open_for_processing + read_header loop; only the target file is extracted.
 pub fn read_image(path: &Path, entry_name: &str) -> Result<Vec<u8>, String> {
-    let hash = {
-        use sha2::{Digest, Sha256};
-        let bytes = std::fs::read(path).map_err(|e| e.to_string())?;
-        let mut h = Sha256::new();
-        h.update(&bytes);
-        format!("{:x}", h.finalize())[..16].to_string()
-    };
-    let extract_dir = std::env::temp_dir()
-        .join("manga-manager-rar")
-        .join(&hash);
+    let archive = unrar::Archive::new(path);
+    let mut proc = archive
+        .open_for_processing()
+        .map_err(|e| e.to_string())?;
 
-    if !extract_dir.exists() {
-        std::fs::create_dir_all(&extract_dir).map_err(|e| e.to_string())?;
-        // extract_to takes ownership, so build path_buf first
-        let archive = unrar::Archive::new(path.to_path_buf());
-        archive.extract_to(&extract_dir).map_err(|e| e.to_string())?;
+    let temp_dir = std::env::temp_dir().join("manga-manager-rar");
+    std::fs::create_dir_all(&temp_dir).map_err(|e| e.to_string())?;
+
+    loop {
+        match proc.read_header().map_err(|e| e.to_string())? {
+            Some(header) => {
+                let info = header.entry();
+                let name = info.filename.display().to_string();
+                if info.is_directory() {
+                    proc = header.skip().map_err(|e| e.to_string())?;
+                } else if name == entry_name {
+                    proc = header
+                        .extract_with_base(&temp_dir)
+                        .map_err(|e| e.to_string())?;
+                    let file_path = temp_dir.join(&name);
+                    let data = std::fs::read(&file_path).map_err(|e| e.to_string())?;
+                    let _ = std::fs::remove_file(&file_path);
+                    return Ok(data);
+                } else {
+                    proc = header.skip().map_err(|e| e.to_string())?;
+                }
+            }
+            None => break,
+        }
     }
-
-    let file_path = extract_dir.join(entry_name);
-    std::fs::read(&file_path).map_err(|e| e.to_string())
+    Err("image not found in rar".into())
 }
